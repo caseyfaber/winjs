@@ -875,6 +875,13 @@ define([
                     this._resize(event);
                 },
 
+                _backPressed: function _Overlay_backPressed() {
+                    if (this._element.contains(document.activeElement) && !this._sticky) {
+                        this._hideOrDismiss(); // dismiss this transient UI control.
+                        return true; // indicate that we've handled the event to cancel it's propagation.
+                    }
+                },
+
                 _hideOrDismiss: function _Overlay_hideOrDismiss() {
                     var element = this._element;
                     if (element && _ElementUtilities.hasClass(element, _Constants.settingsFlyoutClass)) {
@@ -1035,6 +1042,13 @@ define([
                                 that._writeProfilerMark("_checkScrollPosition,StopTM");
                             });
                         }
+
+                        // React to WinRT BackButton event
+                        WinJS.Application.addEventListener("backpressed", function (event) {
+                            that._writeProfilerMark("_backPressed,StartTM");
+                            _allOverlaysCallback(event, "_backPressed");
+                            that._writeProfilerMark("_backPressed,StopTM");
+                        });
 
                         // Window resize event
                         _Global.addEventListener("resize", function (event) {
