@@ -929,8 +929,9 @@ define([
                     if (event.keyCode === Key.escape && event.keyCode !== Key.IME) {
                         event.preventDefault();
                         event.stopPropagation();
-                        _Overlay._Overlay._hideAllFlyouts();
-                        _Overlay._Overlay._hideLightDismissAppBars(null, true);
+                        //_Overlay._Overlay._hideAllFlyouts();
+                        //_Overlay._Overlay._hideLightDismissAppBars(true);
+                        this._lightDismiss(true);
                     }
 
                     // If the current active element isn't an intrinsic part of the AppBar,
