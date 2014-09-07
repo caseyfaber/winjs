@@ -393,6 +393,10 @@ define([
                     }
                 },
 
+                _triggerLightDismiss: function Flyout_triggerLightDismiss() {
+                    _Overlay._Overlay._lightDismissFlyouts();
+                },
+
                 // Find our new flyout position.
                 _findPosition: function Flyout_findPosition() {
                     this._nextHeight = null;
