@@ -70,6 +70,10 @@ define([
                 this._id = this._element.id || _ElementUtilities._uniqueID(this._element);
                 this._writeProfilerMark("constructor,StartTM");
 
+                if (!this._element.hasAttribute("tabIndex")) {
+                    this._element.tabIndex = -1;
+                }
+
                 // validate that if they didn't set commands, in which
                 // case any HTML only contains commands.  Do this first
                 // so that we don't leave partial Menus in the DOM.
@@ -222,7 +226,7 @@ define([
                     /// The DOM element, or ID of a DOM element,  to anchor the Menu. This parameter overrides the anchor property for this method call only.
                     /// </param>
                     /// <param name="placement" type="object" domElement="false" locid="WinJS.UI.Menu.show_p:placement">
-                    /// The placement of the Menu to the anchor: 'auto' (default), 'top', 'bottom', 'left', or 'right'. This parameter overrides the placement
+                    /// The placement of the Menu to the anchor: 'auto' (default), 'autohorizontal', 'autovertical', 'top', 'bottom', 'left', or 'right'. This parameter overrides the placement
                     /// property for this method call only.
                     /// </param>
                     /// <param name="alignment" type="object" domElement="false" locid="WinJS.UI.Menu.show_p:alignment">
