@@ -911,12 +911,16 @@ define([
                     _Dispose.disposeSubTree(this.element);
                     this._layout.dispose();
                     this.disabled = true;
-
                 },
 
                 _disposeChildren: function AppBar_disposeChildren() {
                     // Be purposeful about what we dispose.
                     this._layout.disposeChildren();
+                },
+
+                _isLightDismissable: function AppBar_isLightDismissabke() {
+                    // An AppBar is considered light dismissable if there is at least one visible non sticky AppBar.
+                    return _Overlay._Overlay.prototype._isLightDismissable.call(this) || _isThereVisibleNonStickyBar();
                 },
 
                 _handleKeyDown: function AppBar_handleKeyDown(event) {

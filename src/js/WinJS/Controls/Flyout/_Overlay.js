@@ -878,13 +878,19 @@ define([
                     this._resize(event);
                 },
 
+                _isLightDismissable: function _Overlay_isLightDismissable() {
+                    return (!this._sticky && !this.hidden);
+                },
+
                 _lightDismiss: function _Overlay_lightDismiss(keyboardInvoked) {
-                    _Overlay._lightDismissOverlays(keyboardInvoked);
+                    if (this._isLightDismissable()) {
+                        _Overlay._lightDismissOverlays(keyboardInvoked);
+                    }
                 },
 
                 _backClick: function _Overlay_backClick() {
-                    if (this._element.contains(document.activeElement) && !this._hidden) {
-                        this._lightDismiss(false); // dismiss this transient UI control.
+                    if (this._element.contains(document.activeElement) && this._isLightDismissable()) {
+                        this._lightDismiss(false) //  dismiss this transient UI control.
                         return true; // indicate that we've handled the event to cancel it's propagation.
                     }
                 },

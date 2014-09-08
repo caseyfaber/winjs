@@ -16,7 +16,7 @@ define([
     './Flyout/_Overlay',
     'require-style!less/desktop/controls',
     'require-style!less/phone/controls'
-    ], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, Animations, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
+], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, Animations, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -394,7 +394,9 @@ define([
                 },
 
                 _lightDismiss: function Flyout_lightDismiss() {
-                    _Overlay._Overlay._lightDismissFlyouts();
+                    if (this._isLightDismissable()) {
+                        _Overlay._Overlay._lightDismissFlyouts();
+                    }
                 },
 
                 // Find our new flyout position.
@@ -767,7 +769,7 @@ define([
                         this._element.style.top = "auto";
                     } else {
                         // Normal, attach to top
-                        this._element.style.top =  _Overlay._Overlay._keyboardInfo._visibleDocTop + "px";
+                        this._element.style.top = _Overlay._Overlay._keyboardInfo._visibleDocTop + "px";
                         this._element.style.bottom = "auto";
                     }
                 },
