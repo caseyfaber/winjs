@@ -86,7 +86,7 @@ define([
             function _edgyMayHideFlyouts() {
                 // Flyouts and SettingsFlyouts should not light dismiss when they are the target of a right click.
                 if (!_Overlay._rightMouseMightEdgy) {
-                    _Overlay._hideAllFlyouts();
+                    _Overlay._lightDismissAllFlyouts();
                 }
             }
 
@@ -883,7 +883,7 @@ define([
                 },
 
                 _backClick: function _Overlay_backClick() {
-                    if (this._element.contains(document.activeElement) && !this._hidden && !this._sticky) {
+                    if (this._element.contains(document.activeElement) && !this._hidden) {
                         this._triggerLightDimiss(false); // dismiss this transient UI control.
                         return true; // indicate that we've handled the event to cancel it's propagation.
                     }
@@ -1025,7 +1025,7 @@ define([
                         if (_WinRT.Windows.UI.Input.EdgeGesture) {
                             // Catch edgy events too
                             var commandUI = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
-                            commandUI.addEventListener("starting", _Overlay._hideAllFlyouts);
+                            commandUI.addEventListener("starting", _Overlay._lightDismissAllFlyouts);
                             commandUI.addEventListener("completed", _edgyMayHideFlyouts);
                         }
 
@@ -1094,38 +1094,59 @@ define([
                 _clickEatingFlyoutDiv: false,
                 _flyoutEdgeLightDismissEvent: false,
 
-                _hideFlyouts: function (testElement, notSticky) {
+                _lightDismissFlyouts: function () {
                     _Overlay._hideClickEatingDivFlyout();
-                    var elements = testElement.querySelectorAll("." + _Constants.flyoutClass);
+                    var elements = document.body.querySelectorAll("." + _Constants.flyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
                         var element = elements[i];
                         if (element.style.visibility !== "hidden") {
                             var flyout = element.winControl;
-                            if (flyout && (!notSticky || !flyout._sticky)) {
+                            if (flyout && (!flyout._sticky)) {
                                 flyout._hideOrDismiss();
                             }
                         }
                     }
                 },
 
-                _hideSettingsFlyouts: function (testElement, notSticky) {
-                    var elements = testElement.querySelectorAll("." + _Constants.settingsFlyoutClass);
+                _lightDismissSettingsFlyouts: function () {
+                    var elements = document.body.querySelectorAll("." + _Constants.settingsFlyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
                         var element = elements[i];
                         if (element.style.visibility !== "hidden") {
                             var settingsFlyout = element.winControl;
-                            if (settingsFlyout && (!notSticky || !settingsFlyout._sticky)) {
+                            if (settingsFlyout && (!settingsFlyout._sticky)) {
                                 settingsFlyout._hideOrDismiss();
                             }
                         }
                     }
                 },
 
-                _hideAllFlyouts: function () {
-                    _Overlay._hideFlyouts(_Global.document, true);
-                    _Overlay._hideSettingsFlyouts(_Global.document, true);
+                _lightDismissAllFlyouts: function () {
+                    _Overlay._lightDismissFlyouts();
+                    _Overlay._lightDismissSettingsFlyouts);
+                },
+
+                _lightDismissOverlays: function _Overlay_lightDismissOverlays(keyBoardInvoked) {
+                    // Light Dismiss All _Overlays
+                    _Overlay._hideLightDismissAppBars(keyBoardInvoked);
+                    _Overlay._lightDismissAllFlyouts();
+                },
+
+                _lightDismissAppBars: function _Overlay_lightDismissAppBars(keyboardInvoked) {
+                    var elements = _Global.document.querySelectorAll("." + _Constants.appBarClass);
+                    var len = elements.length;
+                    var AppBars = [];
+                    for (var i = 0; i < len; i++) {
+                        var AppBar = elements[i].winControl;
+                        if (AppBar && !AppBar.sticky && !AppBar.hidden) {
+                            AppBars.push(AppBar);
+                        }
+                    }
+
+                    _Overlay._hideAppBars(AppBars, keyboardInvoked);
+                    _Overlay._hideClickEatingDivAppBar();
                 },
 
                 _createClickEatingDivTemplate: function (divClass, hideClickEatingDivFunction) {
@@ -1213,12 +1234,6 @@ define([
 
                     // Light Dismiss everything.
                     _Overlay._lightDismissOverlays(false)
-                },
-
-                lightDismissOverlays: function _Overlay_lightDismissOverlays(keyBoardInvoked) {
-                    // Light Dismiss All _Overlays
-                    _Overlay._hideLightDismissAppBars(keyBoardInvoked);
-                    _Overlay._hideAllFlyouts();
                 },
 
                 // If they click on a click eating div, even with a right click,
@@ -1409,29 +1424,14 @@ define([
                 // Hide all light dismiss AppBars if what has focus is not part of a AppBar or flyout.
                 _hideIfAllAppBarsLostFocus: function _Overlay_hideIfAllAppBarsLostFocus() {
                     if (!_Overlay._isAppBarOrChild(_Global.document.activeElement)) {
-                        _Overlay._hideLightDismissAppBars(false);
+                        _Overlay._lightDismissAppBars(false);
                         // Ensure that sticky appbars clear cached focus after light dismiss are dismissed, which moved focus.
                         _Overlay._ElementWithFocusPreviousToAppBar = null;
                     }
                 },
 
-                _hideLightDismissAppBars: function _Overlay_hideLightDismissAppBars(keyboardInvoked) {
-                    var elements = _Global.document.querySelectorAll("." + _Constants.appBarClass);
-                    var len = elements.length;
-                    var AppBars = [];
-                    for (var i = 0; i < len; i++) {
-                        var AppBar = elements[i].winControl;
-                        if (AppBar && !AppBar.sticky && !AppBar.hidden) {
-                            AppBars.push(AppBar);
-                        }
-                    }
-
-                    _Overlay._hideAllBars(AppBars, keyboardInvoked);
-                    _Overlay._hideClickEatingDivAppBar();
-                },
-
                 // Show/Hide all bars
-                _hideAllBars: function _Overlay_hideAllBars(bars, keyboardInvoked) {
+                _hideAppBars: function _Overlay_hideAppBars(bars, keyboardInvoked) {
                     var allBarsAnimationPromises = bars.map(function (bar) {
                         bar._keyboardInvoked = keyboardInvoked;
                         bar.hide();
@@ -1440,7 +1440,7 @@ define([
                     return Promise.join(allBarsAnimationPromises);
                 },
 
-                _showAllBars: function _Overlay_showAllBars(bars, keyboardInvoked) {
+                _showAppBars: function _Overlay_showAppBars(bars, keyboardInvoked) {
                     var allBarsAnimationPromises = bars.map(function (bar) {
                         bar._keyboardInvoked = keyboardInvoked;
                         bar._doNotFocus = false;

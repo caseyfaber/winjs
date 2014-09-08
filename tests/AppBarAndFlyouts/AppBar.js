@@ -1494,13 +1494,13 @@ CorsicaTests.AppBarTests = function () {
     function hideAllAppBars() {
         var AppBars = document.querySelectorAll(".win-appbar");
         AppBars = Array.prototype.map.call(AppBars, function (AppBar) { return AppBar.winControl; });
-        return WinJS.UI._Overlay._hideAllBars(AppBars);
+        return WinJS.UI._Overlay._hideAppBars(AppBars);
     };
 
     function showAllAppBars() {
         var AppBars = document.querySelectorAll(".win-appbar");
         AppBars = Array.prototype.map.call(AppBars, function (AppBar) { return AppBar.winControl; });
-        return WinJS.UI._Overlay._showAllBars(AppBars);
+        return WinJS.UI._Overlay._showAppBars(AppBars);
     }
     this.testSingleAppBarLightDismissFocusWrapping = function (complete) {
         var root = document.getElementById("appBarDiv");

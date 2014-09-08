@@ -111,9 +111,9 @@ define([
                 // Undo whatever we were doing.
                 var bars = _getDynamicBarsForEdgy();
                 if (edgyHappening === "showing") {
-                    _Overlay._Overlay._hideAllBars(bars, false);
+                    _Overlay._Overlay._hideAppBars(bars, false);
                 } else if (edgyHappening === "hiding") {
-                    _Overlay._Overlay._showAllBars(bars, false);
+                    _Overlay._Overlay._showAppBars(bars, false);
                 }
                 edgyHappening = null;
             }
@@ -929,9 +929,7 @@ define([
                     if (event.keyCode === Key.escape && event.keyCode !== Key.IME) {
                         event.preventDefault();
                         event.stopPropagation();
-                        //_Overlay._Overlay._hideAllFlyouts();
-                        //_Overlay._Overlay._hideLightDismissAppBars(true);
-                        this._lightDismiss(true);
+                        this._triggerLightDismiss(true);
                     }
 
                     // If the current active element isn't an intrinsic part of the AppBar,
@@ -1576,12 +1574,12 @@ define([
 
                     if (hiding) {
                         AppBar._appBarsSynchronizationPromise = AppBar._appBarsSynchronizationPromise.then(function () {
-                            return _Overlay._Overlay._hideAllBars(bars, keyboardInvoked);
+                            return _Overlay._Overlay._hideAppBars(bars, keyboardInvoked);
                         });
                         return "hiding";
                     } else {
                         AppBar._appBarsSynchronizationPromise = AppBar._appBarsSynchronizationPromise.then(function () {
-                            return _Overlay._Overlay._showAllBars(bars, keyboardInvoked);
+                            return _Overlay._Overlay._showAppBars(bars, keyboardInvoked);
                         });
                         return "showing";
                     }
