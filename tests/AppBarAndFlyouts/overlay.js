@@ -167,6 +167,43 @@ CorsicaTests.OverlayTests = function () {
         overlay.dispose();
     }
 
+    this.testBackClickEventTriggersLightDismiss = function (complete) {
+
+        // Simulate
+        function simulateBackClick() {
+            WinJS.Application.start();
+
+            var event = OverlayHelpers.createBackClickEvent();
+            LiveUnit.Assert.isFalse(event._winRTBackPressedEvent.handled);
+            WinJS.Application.queueEvent(event); // Fire the "backclick" event from WinJS.Application 
+
+            WinJS.Application.addEventListener("verification", verify, true);
+            WinJS.Application.queueEvent({ type: 'verification', _winRTBackPressedEvent: _winRTBackPressedEvent });
+        };
+
+        // Verify 
+        function verify(event) {
+            debugger
+            LiveUnit.Assert.isTrue(event._winRTBackPressedEvent.handled);
+            LiveUnit.Assert.isFalse(overlay.hidden);
+            cleanup();
+        };
+
+        // Cleanup
+        function cleanup() {
+            WinJS.Application.removeEventListener("verification", verify, true);
+            WinJS.Application.stop();
+            complete();
+        }
+
+        // Setup
+        var overlayElement = document.createElement("div");
+        document.body.appendChild(overlayElement);
+        var overlay = new WinJS.UI._Overlay(overlayElement);
+        overlay.addEventListener("aftershow", simulateBackClick, false);
+        overlay.show();
+    }
+
 
 }
 
