@@ -878,13 +878,13 @@ define([
                     this._resize(event);
                 },
 
-                _triggerLightDismiss: function _Overlay_triggerLightDismiss(keyboardInvoked) {
-                    _Overlay_lightDismissOverlays(keyboardInvoked);
+                _lightDismiss: function _Overlay_lightDismiss(keyboardInvoked) {
+                    _Overlay._lightDismissOverlays(keyboardInvoked);
                 },
 
                 _backClick: function _Overlay_backClick() {
                     if (this._element.contains(document.activeElement) && !this._hidden) {
-                        this._triggerLightDimiss(false); // dismiss this transient UI control.
+                        this._lightDismiss(false); // dismiss this transient UI control.
                         return true; // indicate that we've handled the event to cancel it's propagation.
                     }
                 },
@@ -1094,7 +1094,7 @@ define([
                 _clickEatingFlyoutDiv: false,
                 _flyoutEdgeLightDismissEvent: false,
 
-                _lightDismissFlyouts: function () {
+                _lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {
                     _Overlay._hideClickEatingDivFlyout();
                     var elements = document.body.querySelectorAll("." + _Constants.flyoutClass);
                     var len = elements.length;
@@ -1109,7 +1109,7 @@ define([
                     }
                 },
 
-                _lightDismissSettingsFlyouts: function () {
+                _lightDismissSettingsFlyouts: function _Overlay_lightDismissSettingsFlyouts() {
                     var elements = document.body.querySelectorAll("." + _Constants.settingsFlyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
@@ -1123,14 +1123,14 @@ define([
                     }
                 },
 
-                _lightDismissAllFlyouts: function () {
+                _lightDismissAllFlyouts: function _Overlay_lightDismissAllFlyouts() {
                     _Overlay._lightDismissFlyouts();
-                    _Overlay._lightDismissSettingsFlyouts);
+                    _Overlay._lightDismissSettingsFlyouts();
                 },
 
                 _lightDismissOverlays: function _Overlay_lightDismissOverlays(keyBoardInvoked) {
                     // Light Dismiss All _Overlays
-                    _Overlay._hideLightDismissAppBars(keyBoardInvoked);
+                    _Overlay._lightDismissAppBars(keyBoardInvoked);
                     _Overlay._lightDismissAllFlyouts();
                 },
 
@@ -1228,7 +1228,7 @@ define([
 
                 // If they click on a click eating div, even with a right click,
                 // touch or anything, then we want to light dismiss that layer.
-                _handleAppBarClickEatingClick: function (event) {
+                _handleAppBarClickEatingClick: function _Overlay_handleAppBarClickEatingClick(event) {
                     event.stopPropagation();
                     event.preventDefault();
 
@@ -1238,13 +1238,13 @@ define([
 
                 // If they click on a click eating div, even with a right click,
                 // touch or anything, then we want to light dismiss that layer.
-                _handleFlyoutClickEatingClick: function (event) {
+                _handleFlyoutClickEatingClick: function _Overlay__handleFlyoutClickEatingClick(event) {
                     event.stopPropagation();
                     event.preventDefault();
 
                     // Don't light dismiss AppBars because edgy will do that as needed,
                     // so flyouts only.
-                    _Overlay._Overlay_lightDismissFlyouts();
+                    _Overlay._lightDismissFlyouts();
                 },
 
                 lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {

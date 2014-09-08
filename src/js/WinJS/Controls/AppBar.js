@@ -929,7 +929,7 @@ define([
                     if (event.keyCode === Key.escape && event.keyCode !== Key.IME) {
                         event.preventDefault();
                         event.stopPropagation();
-                        this._triggerLightDismiss(true);
+                        this._lightDismiss(true);
                     }
 
                     // If the current active element isn't an intrinsic part of the AppBar,

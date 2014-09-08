@@ -393,7 +393,7 @@ define([
                     }
                 },
 
-                _triggerLightDismiss: function Flyout_triggerLightDismiss() {
+                _lightDismiss: function Flyout_lightDismiss() {
                     _Overlay._Overlay._lightDismissFlyouts();
                 },
 
