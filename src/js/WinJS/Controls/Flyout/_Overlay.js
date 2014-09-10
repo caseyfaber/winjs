@@ -167,6 +167,10 @@ define([
                         _Control.setOptions(this, options);
                     }
 
+                    // React to WinRT BackButton event
+                    this._backClickBound = this._backClick.bind(this);
+                    WinJS.Application.addEventListener("backclick", this._backClickBound, true);
+
                     // Make sure _Overlay event handlers are hooked up (this aids light dismiss)
                     this._addOverlayEventHandlers();
                 },
@@ -229,6 +233,8 @@ define([
 
                     this._disposed = true;
                     this._dispose();
+
+                    WinJS.Application.removeEventListener("backclick", this._backClickBound, true);
                 },
 
                 _dispose: function _Overlay_dispose() {
@@ -1064,13 +1070,13 @@ define([
                             });
                         }
 
-                        // React to WinRT BackButton event
-                        WinJS.Application.addEventListener("backclick", function (event) {
-                            that._writeProfilerMark("_backClick,StartTM");
-                            var handled = _allOverlaysCallback(event, "_backClick", true);
-                            that._writeProfilerMark("_backClick,StopTM");
-                            return handled;
-                        });
+                        //// React to WinRT BackButton event
+                        //WinJS.Application.addEventListener("backclick", function (event) {
+                        //    that._writeProfilerMark("_backClick,StartTM");
+                        //    var handled = _allOverlaysCallback(event, "_backClick", true);
+                        //    that._writeProfilerMark("_backClick,StopTM");
+                        //    return handled;
+                        //});
 
                         // Window resize event
                         _Global.addEventListener("resize", function (event) {

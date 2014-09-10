@@ -143,6 +143,45 @@ CorsicaTests.OverlayTests = function () {
         LiveUnit.Assert.isTrue(inheritanceDispose);
         overlay.dispose();
     }
+
+    this.testHiddenOverlayWillNotHandleBackClickEvent = function (complete) {
+        // Verifies that a hidden _Overlay should never handle the WinJS.Application.backclick event.
+
+        // Simulate
+        function simulateBackClick() {
+            backClickEvent = OverlayHelpers.createBackClickEvent();
+            LiveUnit.Assert.isFalse(backClickEvent._winRTBackPressedEvent.handled);
+            WinJS.Application.queueEvent(backClickEvent); // Fire the "backclick" event from WinJS.Application 
+
+            WinJS.Application.addEventListener("verification", verify, true);
+            WinJS.Application.queueEvent({ type: 'verification' });
+        };
+
+        // Verify 
+        function verify() {
+            LiveUnit.Assert.isFalse(backClickEvent._winRTBackPressedEvent.handled, "A hidden _Overlay should never handle the 'backclick' event");
+            cleanup();
+        };
+
+        // Cleanup
+        function cleanup() {
+            WinJS.Application.removeEventListener("verification", verify, true);
+            WinJS.Application.stop();
+            complete();
+        }
+
+        // Setup
+        WinJS.Application.start();
+        var backClickEvent;
+
+        var overlayElement = document.createElement("div");
+        document.body.appendChild(overlayElement);
+        var overlay = new WinJS.UI._Overlay(overlayElement);
+
+        LiveUnit.Assert.isTrue(overlay.hidden, "Test expects that _Overlays are hidden by default");
+        simulateBackClick();
+
+    };
 }
 
 // register the object as a test class by passing in the name
