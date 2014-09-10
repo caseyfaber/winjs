@@ -35,20 +35,12 @@ CorsicaTests.OverlayTests = function () {
         verifyFunction("removeEventListener");
     }
 
-
-
-
-
     // Test Overlay Instantiation with null element
     this.testOverlayNullInstantiation = function () {
         LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Overlay with null element");
         var overlay = new WinJS.UI._Overlay(null);
         LiveUnit.Assert.isNotNull(overlay, "Overlay instantiation was null when sent a null Overlay element.");
     }
-
-
-
-
 
     // Test multiple instantiation of the same overlay DOM element
     this.testOverlayMultipleInstantiation = function () {
@@ -63,9 +55,6 @@ CorsicaTests.OverlayTests = function () {
     }
 
     this.testOverlayMultipleInstantiation["LiveUnit.ExpectedException"] = { message: "Invalid argument: Controls may only be instantiated one time for each DOM element" }; // This is the exception that is expected
-
-
-
 
     // Test overlay parameters
     this.testOverlayParams = function () {
@@ -101,10 +90,6 @@ CorsicaTests.OverlayTests = function () {
         LiveUnit.LoggingCore.logComment("Testing element");
     }
 
-
-
-
-
     // Test defaults
     this.testDefaultOverlayParameters = function () {
         // Get the Overlay element from the DOM
@@ -119,10 +104,6 @@ CorsicaTests.OverlayTests = function () {
         LiveUnit.Assert.areEqual(overlay.autoHide, undefined, "Verifying that autoHide is undefined");
         LiveUnit.Assert.areEqual(overlay.lightDismiss, undefined, "Verifying that lightDismiss is undefined");
     }
-
-
-
-
 
     // Simple Function Tests
     this.testSimpleOverlayFunctions = function () {
@@ -147,10 +128,6 @@ CorsicaTests.OverlayTests = function () {
         overlay.removeEventListener();
     }
 
-
-
-
-
     this.testOverlayDispose = function () {
         var overlay = new WinJS.UI._Overlay();
         LiveUnit.Assert.isTrue(overlay.dispose);
@@ -166,45 +143,6 @@ CorsicaTests.OverlayTests = function () {
         LiveUnit.Assert.isTrue(inheritanceDispose);
         overlay.dispose();
     }
-
-    this.testBackClickEventTriggersLightDismiss = function (complete) {
-
-        // Simulate
-        function simulateBackClick() {
-            WinJS.Application.start();
-
-            var event = OverlayHelpers.createBackClickEvent();
-            LiveUnit.Assert.isFalse(event._winRTBackPressedEvent.handled);
-            WinJS.Application.queueEvent(event); // Fire the "backclick" event from WinJS.Application 
-
-            WinJS.Application.addEventListener("verification", verify, true);
-            WinJS.Application.queueEvent({ type: 'verification', _winRTBackPressedEvent: _winRTBackPressedEvent });
-        };
-
-        // Verify 
-        function verify(event) {
-            debugger
-            LiveUnit.Assert.isTrue(event._winRTBackPressedEvent.handled);
-            LiveUnit.Assert.isFalse(overlay.hidden);
-            cleanup();
-        };
-
-        // Cleanup
-        function cleanup() {
-            WinJS.Application.removeEventListener("verification", verify, true);
-            WinJS.Application.stop();
-            complete();
-        }
-
-        // Setup
-        var overlayElement = document.createElement("div");
-        document.body.appendChild(overlayElement);
-        var overlay = new WinJS.UI._Overlay(overlayElement);
-        overlay.addEventListener("aftershow", simulateBackClick, false);
-        overlay.show();
-    }
-
-
 }
 
 // register the object as a test class by passing in the name

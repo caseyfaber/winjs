@@ -343,10 +343,6 @@ define([
                 this._id = this._element.id || _ElementUtilities._uniqueID(this._element);
                 this._writeProfilerMark("constructor,StartTM");
 
-                if (!this._element.hasAttribute("tabIndex")) {
-                    this._element.tabIndex = -1;
-                }
-
                 // Attach our css class.
                 _ElementUtilities.addClass(this._element, _Constants.appBarClass);
 
@@ -423,9 +419,6 @@ define([
 
                     appBarCommandEvent = true;
                 }
-
-                // Make sure _Overlay event handlers are hooked up (this aids light dismiss)
-                this._addOverlayEventHandlers(false);
 
                 // Need to store what had focus before
                 _ElementUtilities._addEventListener(this._element, "focusin", function (event) { _checkStorePreviousFocus(event); }, false);

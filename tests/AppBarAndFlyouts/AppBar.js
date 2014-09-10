@@ -1688,6 +1688,44 @@ CorsicaTests.AppBarTests = function () {
             complete();
         });
     }
+
+    this.testBackClickEventTriggersLightDismiss = function (complete) {
+        // Verifies that a shown AppBar will handle the WinJS.Application.backclick event and light dismiss itself.
+
+        // Simulate
+        function simulateBackClick() {
+            backClickEvent = OverlayHelpers.createBackClickEvent();
+            LiveUnit.Assert.isFalse(backClickEvent._winRTBackPressedEvent.handled);
+            WinJS.Application.queueEvent(backClickEvent); // Fire the "backclick" event from WinJS.Application 
+
+            WinJS.Application.addEventListener("verification", verify, true);
+            WinJS.Application.queueEvent({ type: 'verification' });
+        };
+
+        // Verify 
+        function verify() {
+            LiveUnit.Assert.isTrue(backClickEvent._winRTBackPressedEvent.handled, "AppBar should have handled the 'backclick' event");
+            LiveUnit.Assert.isTrue(appbar.hidden, "AppBar should be hidden after light dismiss");
+            cleanup();
+        };
+
+        // Cleanup
+        function cleanup() {
+            WinJS.Application.removeEventListener("verification", verify, true);
+            WinJS.Application.stop();
+            complete();
+        }
+
+        // Setup
+        WinJS.Application.start();
+        var backClickEvent;
+
+        var appbarElement = document.createElement("div");
+        document.body.appendChild(appbarElement);
+        var appbar = new WinJS.UI.AppBar(appbarElement);
+        appbar.addEventListener("aftershow", simulateBackClick, false);
+        appbar.show();
+    };
 };
 
 // register the object as a test class by passing in the name

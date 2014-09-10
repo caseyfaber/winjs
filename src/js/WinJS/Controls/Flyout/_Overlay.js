@@ -129,6 +129,11 @@ define([
                     if (!this._element) {
                         this._element = element;
                     }
+
+                    if (!this._element.hasAttribute("tabIndex")) {
+                        this._element.tabIndex = -1;
+                    }
+
                     this._sticky = false;
                     this._doNext = "";
 
@@ -161,6 +166,9 @@ define([
                     if (options) {
                         _Control.setOptions(this, options);
                     }
+
+                    // Make sure _Overlay event handlers are hooked up (this aids light dismiss)
+                    this._addOverlayEventHandlers();
                 },
 
                 /// <field type="HTMLElement" domElement="true" readonly="true" hidden="true" locid="WinJS.UI._Overlay.element" helpKeyword="WinJS.UI._Overlay.element">The DOM element the Overlay is attached to</field>
@@ -1016,7 +1024,7 @@ define([
                     }
                 },
 
-                _addOverlayEventHandlers: function _Overlay_addOverlayEventHandlers(isFlyoutOrSettingsFlyout) {
+                _addOverlayEventHandlers: function _Overlay_addOverlayEventHandlers() {
                     // Set up global event handlers for all overlays
                     if (!_Overlay._flyoutEdgeLightDismissEvent) {
                         // Dismiss on blur & resize
@@ -1073,14 +1081,9 @@ define([
 
                         _Overlay._flyoutEdgeLightDismissEvent = true;
                     }
-
-                    // Individual handlers for Flyouts only
-                    if (isFlyoutOrSettingsFlyout) {
-                        this._handleEventsForFlyoutOrSettingsFlyout();
-                    }
                 },
 
-                _handleEventsForFlyoutOrSettingsFlyout: function _Overlay_handleEventsForFlyoutOrSettingsFlyout() {
+                _handleOverlayEventsForFlyoutOrSettingsFlyout: function _Overlay_handleOverlayEventsForFlyoutOrSettingsFlyout() {
                     var that = this;
                     // Need to hide ourselves if we lose focus
                     _ElementUtilities._addEventListener(this._element, "focusout", function (e) { _Overlay._hideIfLostFocus(that, e); }, false);

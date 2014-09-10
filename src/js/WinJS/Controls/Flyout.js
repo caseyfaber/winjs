@@ -131,8 +131,8 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    // Make sure _Overlay event handlers are hooked up
-                    this._addOverlayEventHandlers(true);
+                    // Make sure Additional _Overlay event handlers are hooked up
+                    this._handleOverlayEventsForFlyoutOrSettingsFlyout();
                 },
 
                 /// <field type="String" locid="WinJS.UI.Flyout.anchor" helpKeyword="WinJS.UI.Flyout.anchor">
