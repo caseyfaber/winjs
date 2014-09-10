@@ -64,7 +64,7 @@ define([
             }
 
             // Helpers for keyboard showing related events
-            function _allOverlaysCallback(event, command, returnWhenHandled) {
+            function _allOverlaysCallback(event, command) {
                 var elements = _Global.document.querySelectorAll("." + _Constants.overlayClass);
                 if (elements) {
                     var len = elements.length;
@@ -73,10 +73,7 @@ define([
                         var control = element.winControl;
                         if (!control._disposed) {
                             if (control) {
-                                var handled = control[command](event);
-                                if (returnWhenHandled && handled) {
-                                    return handled;
-                                }
+                                control[command](event);
                             }
                         }
                     }
@@ -1069,14 +1066,6 @@ define([
                                 that._writeProfilerMark("_checkScrollPosition,StopTM");
                             });
                         }
-
-                        //// React to WinRT BackButton event
-                        //WinJS.Application.addEventListener("backclick", function (event) {
-                        //    that._writeProfilerMark("_backClick,StartTM");
-                        //    var handled = _allOverlaysCallback(event, "_backClick", true);
-                        //    that._writeProfilerMark("_backClick,StopTM");
-                        //    return handled;
-                        //});
 
                         // Window resize event
                         _Global.addEventListener("resize", function (event) {
