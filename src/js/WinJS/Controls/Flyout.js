@@ -131,7 +131,7 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    // Make sure Additional _Overlay event handlers are hooked up
+                    // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
                 },
 
@@ -394,7 +394,7 @@ define([
                 },
 
                 _lightDismiss: function Flyout_lightDismiss() {
-                    if (this._isLightDismissable()) {
+                    if (this._isLightDismissible()) {
                         _Overlay._Overlay._lightDismissFlyouts();
                     }
                 },

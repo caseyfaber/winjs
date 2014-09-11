@@ -890,20 +890,20 @@ define([
                     this._resize(event);
                 },
 
-                _isLightDismissable: function _Overlay_isLightDismissable() {
+                _isLightDismissible: function _Overlay_isLightDismissible() {
                     return (!this._sticky && !this.hidden);
                 },
 
                 _lightDismiss: function _Overlay_lightDismiss(keyboardInvoked) {
-                    if (this._isLightDismissable()) {
+                    if (this._isLightDismissible()) {
                         _Overlay._lightDismissOverlays(keyboardInvoked);
                     }
                 },
 
                 _backClick: function _Overlay_backClick() {
-                    if (this._element.contains(_Global.document.activeElement) && this._isLightDismissable()) {
+                    if (this._element.contains(_Global.document.activeElement) && this._isLightDismissible()) {
                         this._lightDismiss(false); //  dismiss this transient UI control.
-                        return true; // indicate that we've handled the event to cancel it's propagation.
+                        return true; // indicate that we've handled the event to cancel its propagation.
                     }
                 },
 
@@ -1142,15 +1142,15 @@ define([
                 _lightDismissAppBars: function _Overlay_lightDismissAppBars(keyboardInvoked) {
                     var elements = _Global.document.querySelectorAll("." + _Constants.appBarClass);
                     var len = elements.length;
-                    var AppBars = [];
+                    var appBars = [];
                     for (var i = 0; i < len; i++) {
-                        var AppBar = elements[i].winControl;
-                        if (AppBar && !AppBar.sticky && !AppBar.hidden) {
-                            AppBars.push(AppBar);
+                        var appBar = elements[i].winControl;
+                        if (appBar && !appBar.sticky && !appBar.hidden) {
+                            appBars.push(appBar);
                         }
                     }
 
-                    _Overlay._hideAppBars(AppBars, keyboardInvoked);
+                    _Overlay._hideAppBars(appBars, keyboardInvoked);
                     _Overlay._hideClickEatingDivAppBar();
                 },
 
@@ -1482,7 +1482,7 @@ define([
                         if (_ElementUtilities.hasClass(element, "win-flyout")
                          && element !== element.winControl._previousFocus) {
                             var flyoutControl = element.winControl;
-                            // If _previousFocus was in a light dismissable AppBar, then this Flyout is considered of an extension of it and that AppBar should not hide.
+                            // If _previousFocus was in a light dismissible AppBar, then this Flyout is considered of an extension of it and that AppBar should not hide.
                             // Hook up a 'focusout' listener to this Flyout element to make sure that light dismiss AppBars hide if focus moves anywhere other than back to an AppBar.
                             var appBarElement = _Overlay._isAppBarOrChild(flyoutControl._previousFocus);
                             if (appBarElement) {

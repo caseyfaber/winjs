@@ -916,9 +916,9 @@ define([
                     this._layout.disposeChildren();
                 },
 
-                _isLightDismissable: function AppBar_isLightDismissabke() {
-                    // An AppBar is considered light dismissable if there is at least one visible non sticky AppBar.
-                    return _Overlay._Overlay.prototype._isLightDismissable.call(this) || _isThereVisibleNonStickyBar();
+                _isLightDismissible: function AppBar_isLightDismissible() {
+                    // An AppBar is considered light dismissible if there is at least one visible non sticky AppBar.
+                    return _Overlay._Overlay.prototype._isLightDismissible.call(this) || _isThereVisibleNonStickyBar();
                 },
 
                 _handleKeyDown: function AppBar_handleKeyDown(event) {
