@@ -52,6 +52,17 @@ declare module WinJS {
             constructor(eventObject, overrideProperties);
         }
 
+        function _linkedListMixin(name: string);
+
+        module Scheduler {
+            var _usingWwaScheduler: boolean;
+            var _MSApp;
+            var _isEmpty;
+            var _TIME_SLICE: number;
+        }
+
+        function _now();
+
     }
 
     module Resources {
@@ -87,5 +98,80 @@ declare module WinJS {
             _elementTabHelper;
             _hasMoreElementsInTabOrder;
         }
+
+        class PrivateTooltip extends WinJS.UI.Tooltip {
+            _disposed: boolean;
+            _domElement: HTMLElement;
+
+            static _DELAY_INITIAL_TOUCH_SHORT: number;
+            static _DELAY_INITIAL_TOUCH_LONG: number;
+            static _DEFAULT_MOUSE_HOVER_TIME: number;
+            static _DEFAULT_MESSAGE_DURATION: number;
+            static _DELAY_RESHOW_NONINFOTIP_TOUCH: number;
+            static _DELAY_RESHOW_NONINFOTIP_NONTOUCH: number;
+            static _DELAY_RESHOW_INFOTIP_TOUCH: number;
+            static _DELAY_RESHOW_INFOTIP_NONTOUCH: number;
+            static _RESHOW_THRESHOLD: number;
+        }
+
+        interface ISelect {
+            value;
+            index: number;
+            _domElement;
+        }
+
+        interface ITimePicker extends WinJS.UI.TimePicker {
+            _domElement: HTMLElement;
+            _disposed: boolean;
+            _ampmControl: ISelect;
+            _ampmElement: HTMLSelectElement;
+            _hourControl: ISelect;
+            _hourElement: HTMLSelectElement;
+            _minuteControl: ISelect;
+            _minuteElement: HTMLSelectElement;
+        }
+
+        interface ISemanticZoom extends WinJS.UI.SemanticZoom {
+            _showSemanticZoomButton();
+            _onMouseWheel(evt);
+            _pinching: boolean;
+            _viewportIn;
+            _viewportOut;
+            _canvasIn;
+            _canvasOut;
+            _disposed;
+        }
+
+        var _listViewClass: string;
+        var _viewportClass: string;
+        var _horizontalClass: string;
+        var _verticalClass: string;
+        var _scrollableClass: string;
+        var _containerClass: string;
+        var _headerContainerClass: string;
+
+        module _ListViewAnimationHelper {
+            function fadeInElement(element): Promise<any>;
+            function fadeOutElement(element): Promise < any>;
+            function animateEntrance(canvas, firstEntrance): Promise<any>;
+        }
+
+        module _VirtualizeContentsView {
+            var _maxTimePerCreateContainers;
+        }
+
+        class PrivateSearchBox extends WinJS.UI.SearchBox {
+            _disposed: boolean;
+            static _sortAndMergeHits(hitsProvided?);
+            static _EventName: {
+                querychanged;
+                querysubmitted;
+                resultsuggestionchosen;
+                suggestionsrequested;
+                receivingfocusonkeyboardinput;
+            };
+
+        }
+
     }
 }
