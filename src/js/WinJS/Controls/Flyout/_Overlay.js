@@ -11,13 +11,14 @@ define([
     '../../Core/_Resources',
     '../../Core/_WriteProfilerMark',
     '../../Animations',
+    '../../Application',
     '../../ControlProcessor',
     '../../Promise',
     '../../Scheduler',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants'
-], function overlayInit(exports, _Global, _WinRT, _Base, _BaseUtils, _ErrorFromName, _Events, _Resources, _WriteProfilerMark, Animations, ControlProcessor, Promise, Scheduler, _Control, _ElementUtilities, _Constants) {
+], function overlayInit(exports, _Global, _WinRT, _Base, _BaseUtils, _ErrorFromName, _Events, _Resources, _WriteProfilerMark, Animations, Application, ControlProcessor, Promise, Scheduler, _Control, _ElementUtilities, _Constants) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -166,7 +167,7 @@ define([
 
                     // React to WinRT BackButton event
                     this._backClickBound = this._backClick.bind(this);
-                    WinJS.Application.addEventListener("backclick", this._backClickBound, true);
+                    Application.addEventListener("backclick", this._backClickBound, true);
 
                     // Make sure _Overlay event handlers are hooked up (this aids light dismiss)
                     this._addOverlayEventHandlers();
@@ -231,7 +232,7 @@ define([
                     this._disposed = true;
                     this._dispose();
 
-                    WinJS.Application.removeEventListener("backclick", this._backClickBound, true);
+                    Application.removeEventListener("backclick", this._backClickBound, true);
                 },
 
                 _dispose: function _Overlay_dispose() {
@@ -900,8 +901,8 @@ define([
                 },
 
                 _backClick: function _Overlay_backClick() {
-                    if (this._element.contains(document.activeElement) && this._isLightDismissable()) {
-                        this._lightDismiss(false) //  dismiss this transient UI control.
+                    if (this._element.contains(_Global.document.activeElement) && this._isLightDismissable()) {
+                        this._lightDismiss(false); //  dismiss this transient UI control.
                         return true; // indicate that we've handled the event to cancel it's propagation.
                     }
                 },
@@ -1100,7 +1101,7 @@ define([
 
                 _lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {
                     _Overlay._hideClickEatingDivFlyout();
-                    var elements = document.body.querySelectorAll("." + _Constants.flyoutClass);
+                    var elements = _Global.document.body.querySelectorAll("." + _Constants.flyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
                         var element = elements[i];
@@ -1114,7 +1115,7 @@ define([
                 },
 
                 _lightDismissSettingsFlyouts: function _Overlay_lightDismissSettingsFlyouts() {
-                    var elements = document.body.querySelectorAll("." + _Constants.settingsFlyoutClass);
+                    var elements = _Global.document.body.querySelectorAll("." + _Constants.settingsFlyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
                         var element = elements[i];
@@ -1237,7 +1238,7 @@ define([
                     event.preventDefault();
 
                     // Light Dismiss everything.
-                    _Overlay._lightDismissOverlays(false)
+                    _Overlay._lightDismissOverlays(false);
                 },
 
                 // If they click on a click eating div, even with a right click,
