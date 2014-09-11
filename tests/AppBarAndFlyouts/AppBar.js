@@ -1720,9 +1720,9 @@ CorsicaTests.AppBarTests = function () {
         WinJS.Application.start();
         var backClickEvent;
 
-        var appbarElement = document.createElement("div");
-        document.body.appendChild(appbarElement);
-        var appbar = new WinJS.UI.AppBar(appbarElement);
+        var root = document.getElementById("appBarDiv");
+        var appbar = new WinJS.UI.AppBar();
+        root.appendChild(appbar.element);
         appbar.addEventListener("aftershow", simulateBackClick, false);
         appbar.show();
     };
