@@ -1713,6 +1713,9 @@ CorsicaTests.AppBarTests = function () {
         function cleanup() {
             WinJS.Application.removeEventListener("verification", verify, true);
             WinJS.Application.stop();
+            // Application.stop() kills all listeners on the Application object. 
+            // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
+            WinJS.UI._Overlay._globalEventListeners.reset();
             complete();
         }
 
@@ -1752,6 +1755,9 @@ CorsicaTests.AppBarTests = function () {
         function cleanup() {
             WinJS.Application.removeEventListener("verification", verify, true);
             WinJS.Application.stop();
+            // Application.stop() kills all listeners on the Application object. 
+            // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
+            WinJS.UI._Overlay._globalEventListeners.reset();
             complete();
         }
 
@@ -1794,6 +1800,9 @@ CorsicaTests.AppBarTests = function () {
         function cleanup() {
             WinJS.Application.removeEventListener("verification", verify, true);
             WinJS.Application.stop();
+            // Application.stop() kills all listeners on the Application object.
+            // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
+            WinJS.UI._Overlay._globalEventListeners.reset();
             complete();
         }
 
