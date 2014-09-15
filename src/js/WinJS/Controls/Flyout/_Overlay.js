@@ -84,13 +84,6 @@ define([
                 }
             }
 
-            function _edgyMayHideFlyouts() {
-                // Flyouts and SettingsFlyouts should not light dismiss when they are the target of a right click.
-                if (!_Overlay._rightMouseMightEdgy) {
-                    _Overlay._lightDismissAllFlyouts();
-                }
-            }
-
             var strings = {
                 get duplicateConstruction() { return "Invalid argument: Controls may only be instantiated one time for each DOM element"; },
                 get mustContainCommands() { return "Invalid HTML: AppBars/Menus must contain only AppBarCommands/MenuCommands"; },
@@ -1030,7 +1023,7 @@ define([
                     // Need to hide ourselves if we lose focus
                     _ElementUtilities._addEventListener(this._element, "focusout", function (e) { _Overlay._hideIfLostFocus(that, e); }, false);
 
-                    // Attempt to flag right clicks that may turn into edgy
+                    // Need to handle right clicks that trigger edgy events in WWA
                     _ElementUtilities._addEventListener(this._element, "pointerdown", _Overlay._checkRightClickDown, true);
                     _ElementUtilities._addEventListener(this._element, "pointerup", _Overlay._checkRightClickUp, true);
                 },
@@ -1208,9 +1201,10 @@ define([
 
                 _checkRightClickUp: function (event) {
                     if (_Overlay._checkSameClickEatingPointerUp(event, false)) {
-                        // It was a right click we may want to eat.
-                        _Overlay._rightMouseMightEdgy = true;
-                        _BaseUtils._yieldForEvents(function () { _Overlay._rightMouseMightEdgy = false; });
+                        // Right clicks will trigger the edgy 'completed' event in WWA. 
+                        // Set a flag now and and process it later in our edgy event handler.
+                        _Overlay._containsRightMouseClick = true;
+                        _BaseUtils._yieldForEvents(function () { _Overlay._containsRightMouseClick = false; });
                     }
                 },
 
@@ -1286,11 +1280,11 @@ define([
                     overlay._hideOrDismiss();
                 },
 
-                // Want to hide flyouts on blur.
+                // Want to lightdismiss _Overlays on window blur.
                 // We get blur if we click off the window, including to an iframe within our window.
                 // Both blurs call this function, but fortunately document.hasFocus is true if either
                 // the document window or our iframe window has focus.
-                _checkBlur: function () {
+                _windowBlur: function () {
                     if (!_Global.document.hasFocus()) {
                         // The document doesn't have focus, so they clicked off the app, so light dismiss.
                         _Overlay._lightDismissOverlays(false);
@@ -1309,7 +1303,7 @@ define([
                                 // - This only works in IE because other browsers don't fire focus events on iframe elements.
                                 // - Can't use WinJS.Utilities._addEventListener's focusout because it doesn't fire when an
                                 //   iframe loses focus due to changing windows.
-                                active.addEventListener("blur", _Overlay._checkBlur, false);
+                                active.addEventListener("blur", _Overlay._windowBlur, false);
                                 active.msLightDismissBlur = true;
                             }
                         }
@@ -1371,7 +1365,7 @@ define([
                     return null;
                 },
 
-                // Controller for _Overlay global event registering/unregistering.
+                // Static controller for _Overlay global events registering/unregistering.
                 // The API is:
                 //   _globalEventListeners.initialize()
                 //   _globalEventListeners.reset()
@@ -1381,7 +1375,7 @@ define([
                         initialize: function () {
                             _toggleGlobalListeners(state_on);
                         },
-                        // Expose this for unit testsing.
+                        // Expose this for unit testing.
                         reset: function () {
                             _toggleGlobalListeners(state_off);
                             _toggleGlobalListeners(state_on);
@@ -1391,10 +1385,11 @@ define([
                     // Build JavaScript closure
                     var state_off = 0,
                         state_on = 1,
-                        currentState = state_off;
+                        currentState = state_off,
+                        globalProfilerString = "WinJS.UI._Overlay Global Listener:";
 
                     function _toggleGlobalListeners(newState) {
-                        // Add/Remove global event handlers for all overlays
+                        // Add/Remove global event listeners for all _Overlays
                         var listenerOperation;
                         if (currentState !== newState) {
                             if (newState === state_on) {
@@ -1403,60 +1398,78 @@ define([
                                 listenerOperation = "removeEventListener";
                             }
 
-                            var globalProfilerString = "All WinJS.UI._Overlays Global Events Handler:";
-
                             // Dismiss on blur & resize
                             // Focus handlers generally use WinJS.Utilities._addEventListener with focusout/focusin. This
                             // uses the browser's blur event directly beacuse _addEventListener doesn't support focusout/focusin
                             // on window.
-                            _Global[listenerOperation]("blur", _Overlay._checkBlur, false);
+                            _Global[listenerOperation]("blur", _Overlay._windowBlur, false);
 
                             // Be careful so it behaves in designer as well.
                             if (_WinRT.Windows.UI.Input.EdgeGesture) {
                                 // Catch edgy events too
-                                var commandUI = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
-                                commandUI[listenerOperation]("starting", _Overlay._lightDismissAllFlyouts);
-                                commandUI[listenerOperation]("completed", _edgyMayHideFlyouts);
+                                var edgy = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
+                                edgy[listenerOperation]("starting", globalListeners.edgyStarting);
+                                edgy[listenerOperation]("completed", globalListeners.edgyCompleted);
                             }
 
                             if (_WinRT.Windows.UI.ViewManagement.InputPane) {
                                 // React to Soft Keyboard events
                                 var inputPane = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView();
-                                inputPane[listenerOperation]("showing", function (event) {
-                                    _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StartTM");
-                                    _allOverlaysCallback(event, "_showingKeyboard");
-                                    _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StopTM");
-                                });
-                                inputPane[listenerOperation]("hiding", function (event) {
-                                    _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StartTM");
-                                    _allOverlaysCallback(event, "_hidingKeyboard");
-                                    _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StopTM");
-                                });
-                                // Document scroll event
-                                _Global.document[listenerOperation]("scroll", function (event) {
-                                    _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StartTM");
-                                    _allOverlaysCallback(event, "_checkScrollPosition");
-                                    _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StopTM");
-                                });
+                                inputPane[listenerOperation]("showing", globalListeners.inputPaneShowing, false);
+                                inputPane[listenerOperation]("hiding", globalListeners.inputPaneHiding, false);
+
+                                _Global.document[listenerOperation]("scroll", globalListeners.documentScroll, false);
                             }
 
                             // React to Hardware BackButton event
-                            Application[listenerOperation]("backclick", function (event) {
-                                _WriteProfilerMark(globalProfilerString + "_backClick,StartTM");
-                                return _allOverlaysCallback(event, "_backClick", true);
-                                _WriteProfilerMark(globalProfilerString + "_backClick,StopTM");
-                            });
+                            Application[listenerOperation]("backclick", globalListeners.backClicked, false);
 
                             // Window resize event
-                            _Global.addEventListener("resize", function (event) {
-                                _WriteProfilerMark(globalProfilerString + "_baseResize,StartTM");
-                                _allOverlaysCallback(event, "_baseResize");
-                                _WriteProfilerMark(globalProfilerString + "_baseResize,StopTM");
-                            });
+                            _Global.addEventListener("resize", globalListeners.windowResized, false);
 
                             currentState = newState;
                         }
+                    }
+
+                    var globalListeners = {
+                        inputPaneShowing: function inputePaneShowing(event) {
+                            _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StartTM");
+                            _allOverlaysCallback(event, "_showingKeyboard");
+                            _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StopTM");
+                        },
+                        inputPaneHiding: function inputPaneHiding(event) {
+                            _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StartTM");
+                            _allOverlaysCallback(event, "_hidingKeyboard");
+                            _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StopTM");
+                        },
+                        documentScroll: function documentScroll(event) {
+                            _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StartTM");
+                            _allOverlaysCallback(event, "_checkScrollPosition");
+                            _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StopTM");
+                        },
+                        edgyStarting: function edgyStarting(event) {
+                            _Overlay._lightDismissAllFlyouts();
+                        },
+                        edgyCompleted: function edgyCompleted(event) {
+                            // Right mouse clicks in WWA will trigger the edgy "completed" event.
+                            // Flyouts and SettingsFlyouts should not light dismiss if they are the target of that right click.
+                            if (!_Overlay._containsRightMouseClick) {
+                                _Overlay._lightDismissAllFlyouts();
+                            }
+                        },
+                        backClicked: function backClicked(event) {
+                            _WriteProfilerMark(globalProfilerString + "_backClick,StartTM");
+                            var handled = _allOverlaysCallback(event, "_backClick", true); 
+                            _WriteProfilerMark(globalProfilerString + "_backClick,StopTM");
+                            return handled;
+                        },
+                        windowResized: function windowResized(event) {
+                            _WriteProfilerMark(globalProfilerString + "_baseResize,StartTM");
+                            _allOverlaysCallback(event, "_baseResize");
+                            _WriteProfilerMark(globalProfilerString + "_baseResize,StopTM");
+                        },
                     };
+
                     return returnObject;
                 }()),
 

@@ -79,13 +79,13 @@ define([
                 appbarHiddenState = "hidden";
 
             // Hook into event
-            var appBarCommandEvent = false;
+            var globalEventsInitialized = false;
             var edgyHappening = null;
 
             // Handler for the edgy starting/completed/cancelled events
             function _completedEdgy(e) {
                 // If we had a right click on a flyout, ignore it.
-                if (_Overlay._Overlay._rightMouseMightEdgy &&
+                if (_Overlay._Overlay._containsRightMouseClick &&
                     e.kind === _WinRT.Windows.UI.Input.EdgeGestureKind.mouse) {
                     return;
                 }
@@ -413,22 +413,22 @@ define([
                 // Handle key down (esc) and (left & right)
                 this._element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
 
-                // Attach event handler
-                if (!appBarCommandEvent) {
+                // Attach global event handlers
+                if (!globalEventsInitialized) {
                     // We'll trigger on invoking.  Could also have invoked or canceled
                     // Eventually we may want click up on invoking and drop back on invoked.
                     // Check for namespace so it'll behave in the designer.
                     if (_WinRT.Windows.UI.Input.EdgeGesture) {
-                        var commandUI = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
-                        commandUI.addEventListener("starting", _startingEdgy);
-                        commandUI.addEventListener("completed", _completedEdgy);
-                        commandUI.addEventListener("canceled", _canceledEdgy);
+                        var edgy = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
+                        edgy.addEventListener("starting", _startingEdgy);
+                        edgy.addEventListener("completed", _completedEdgy);
+                        edgy.addEventListener("canceled", _canceledEdgy);
                     }
 
                     // Need to know if the IHM is done scrolling
                     _Global.document.addEventListener("MSManipulationStateChanged", _allManipulationChanged, false);
 
-                    appBarCommandEvent = true;
+                    globalEventsInitialized = true;
                 }
 
                 // Need to store what had focus before
