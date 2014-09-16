@@ -23,6 +23,170 @@ define([
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
         _Overlay: _Base.Namespace._lazy(function () {
+
+            // Helper for Global Event listeners. Invokes the specified callback member function on each _Overlay in the DOM.
+            function _allOverlaysCallback(event, nameOfFunctionCall, stopImmediatePropagationWhenHandled) {
+                var elements = _Global.document.querySelectorAll("." + _Constants.overlayClass);
+                if (elements) {
+                    var len = elements.length;
+                    for (var i = 0; i < len; i++) {
+                        var element = elements[i];
+                        var overlay = element.winControl;
+                        if (!overlay._disposed) {
+                            if (overlay) {
+                                var handled = overlay[nameOfFunctionCall](event);
+                                if (stopImmediatePropagationWhenHandled && handled) {
+                                    // The caller has indicated we should exit as soon as the event is handled.
+                                    return handled;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // _Overlay Global Events Listener Class. We hang a singleton instance of this class off of a static _Overlay property.
+            var _GlobalListener = _Base.Class.define(function _GlobalListener_ctor() {
+                this._currentState = _GlobalListener.states.off;
+            }, {
+                initialize: function _GlobalListener_initialize() {
+                    this._toggleListeners(_GlobalListener.states.on);
+                },
+                // Expose this for unit tests.
+                reset: function _GlobalListener_reset() {
+                    this._toggleListeners(_GlobalListener.states.off);
+                    this._toggleListeners(_GlobalListener.states.on);
+                },
+                _listeners: {
+                    get: function () {
+                        return {
+                            windowBlur: function windowBlur(event) {
+                                // Want to lightdismiss _Overlays on window blur.
+                                // We get blur if we click off the window, including into an iframe within our window.
+                                // Both blurs call this function, but fortunately document.hasFocus is true if either
+                                // the document window or our iframe window has focus.                            
+                                if (!_Global.document.hasFocus()) {
+                                    // The document doesn't have focus, so they clicked off the app, so light dismiss.
+                                    _Overlay._lightDismissOverlays(false);
+                                } else {
+                                    if ((_Overlay._clickEatingFlyoutDiv &&
+                                         _Overlay._clickEatingFlyoutDiv.style.display === "block") ||
+                                        (_Overlay._clickEatingAppBarDiv &&
+                                         _Overlay._clickEatingAppBarDiv.style.display === "block")) {
+                                        // We were trying to unfocus the window, but document still has focus,
+                                        // so make sure the iframe that took the focus will check for blur next time.
+                                        // We don't have to do this if the click eating div is hidden because then
+                                        // there would be no flyout or appbar needing light dismiss.
+                                        var active = _Global.document.activeElement;
+                                        if (active && active.tagName === "IFRAME" && !active.msLightDismissBlur) {
+                                            // - This will go away when the IFRAME goes away, and we only create one.
+                                            // - This only works in IE because other browsers don't fire focus events on iframe elements.
+                                            // - Can't use WinJS.Utilities._addEventListener's focusout because it doesn't fire when an
+                                            //   iframe loses focus due to changing windows.
+                                            active.addEventListener("blur", globalListeners._windowBlur, false);
+                                            active.msLightDismissBlur = true;
+                                        }
+                                    }
+                                }
+                            },
+                            inputPaneShowing: function inputePaneShowing(event) {
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_showingKeyboard,StartTM");
+                                _allOverlaysCallback(event, "_showingKeyboard");
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_showingKeyboard,StopTM");
+                            },
+                            inputPaneHiding: function inputPaneHiding(event) {
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_hidingKeyboard,StartTM");
+                                _allOverlaysCallback(event, "_hidingKeyboard");
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_hidingKeyboard,StopTM");
+                            },
+                            documentScroll: function documentScroll(event) {
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_checkScrollPosition,StartTM");
+                                _allOverlaysCallback(event, "_checkScrollPosition");
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_checkScrollPosition,StopTM");
+                            },
+                            edgyStarting: function edgyStarting(event) {
+                                _Overlay._lightDismissAllFlyouts();
+                            },
+                            edgyCompleted: function edgyCompleted(event) {
+                                // Right mouse clicks in WWA will trigger the edgy "completed" event.
+                                // Flyouts and SettingsFlyouts should not light dismiss if they are the target of that right click.
+                                if (!_Overlay._containsRightMouseClick) {
+                                    _Overlay._lightDismissAllFlyouts();
+                                }
+                            },
+                            backClicked: function backClicked(event) {
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_backClick,StartTM");
+                                var handled = _allOverlaysCallback(event, "_backClick", true);
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_backClick,StopTM");
+                                return handled;
+                            },
+                            windowResized: function windowResized(event) {
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_baseResize,StartTM");
+                                _allOverlaysCallback(event, "_baseResize");
+                                _WriteProfilerMark(_GlobalListener.profilerString + "_baseResize,StopTM");
+                            },
+                        }
+                    }
+                },
+                _toggleListeners: function GlobalListener_toggleListeners(newState) {
+                    // Add/Remove global event listeners for all _Overlays
+                    var listenerOperation;
+                    if (this._currentState !== newState) {
+                        if (newState === _GlobalListener.states.on) {
+                            listenerOperation = "addEventListener";
+                        } else if (newState === _GlobalListener.states.off) {
+                            listenerOperation = "removeEventListener";
+                        }
+
+                        // Dismiss on blur & resize
+                        // Focus handlers generally use WinJS.Utilities._addEventListener with focusout/focusin. This
+                        // uses the browser's blur event directly beacuse _addEventListener doesn't support focusout/focusin
+                        // on window.
+                        _Global[listenerOperation]("blur", this._listeners.windowBlur, false);
+
+                        // Be careful so it behaves in designer as well.
+                        if (_WinRT.Windows.UI.Input.EdgeGesture) {
+                            // Catch edgy events too
+                            var edgy = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
+                            edgy[listenerOperation]("starting", this._listeners.edgyStarting);
+                            edgy[listenerOperation]("completed", this._listeners.edgyCompleted);
+                        }
+
+                        if (_WinRT.Windows.UI.ViewManagement.InputPane) {
+                            // React to Soft Keyboard events
+                            var inputPane = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView();
+                            inputPane[listenerOperation]("showing", this._listeners.inputPaneShowing, false);
+                            inputPane[listenerOperation]("hiding", this._listeners.inputPaneHiding, false);
+
+                            _Global.document[listenerOperation]("scroll", this._listeners.documentScroll, false);
+                        }
+
+                        // React to Hardware BackButton event
+                        Application[listenerOperation]("backclick", this._listeners.backClicked, false);
+
+                        // Window resize event
+                        _Global.addEventListener("resize", this._listeners.windowResized, false);
+
+                        this._currentState = newState;
+                    }
+                },
+            }, {
+                // Statics
+                profilerString: {
+                    get: function () {
+                        return "WinJS.UI._Overlay Global Listener:"
+                    }
+                },
+                states: {
+                    get: function () {
+                        return {
+                            off: 0,
+                            on: 1,
+                        }
+                    },
+                },
+            });
+
             var createEvent = _Events._createEventProperty;
 
             // Event Names
@@ -62,26 +226,6 @@ define([
                 }
 
                 return realElements;
-            }
-
-            // Helper for Global Event listeners. Invokes the specified callback member function on each _Overlay in the DOM.
-            function _allOverlaysCallback(event, nameOfFunctionCall, returnIfHandled) {
-                var elements = _Global.document.querySelectorAll("." + _Constants.overlayClass);
-                if (elements) {
-                    var len = elements.length;
-                    for (var i = 0; i < len; i++) {
-                        var element = elements[i];
-                        var control = element.winControl;
-                        if (!control._disposed) {
-                            if (control) {
-                                var handled = control[nameOfFunctionCall](event);
-                                if (returnIfHandled && handled) {
-                                    return handled;
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
             var strings = {
@@ -1330,142 +1474,11 @@ define([
                     return null;
                 },
 
-                // Static controller for _Overlay global events registering/unregistering.
-                // The API is:
-                //   _globalEventListeners.initialize()
-                //   _globalEventListeners.reset()
-                _globalEventListeners: (function () {
-                    // Self executing function returns this object at the very end. 
-                    var returnObject = {
-                        initialize: function () {
-                            _toggleGlobalListeners(state_on);
-                        },
-                        // Expose this for unit testing.
-                        reset: function () {
-                            _toggleGlobalListeners(state_off);
-                            _toggleGlobalListeners(state_on);
-                        },
-                    };
-
-                    // Build JavaScript closure
-                    var state_off = 0,
-                        state_on = 1,
-                        currentState = state_off,
-                        globalProfilerString = "WinJS.UI._Overlay Global Listener:";
-
-                    function _toggleGlobalListeners(newState) {
-                        // Add/Remove global event listeners for all _Overlays
-                        var listenerOperation;
-                        if (currentState !== newState) {
-                            if (newState === state_on) {
-                                listenerOperation = "addEventListener";
-                            } else if (newState === state_off) {
-                                listenerOperation = "removeEventListener";
-                            }
-
-                            // Dismiss on blur & resize
-                            // Focus handlers generally use WinJS.Utilities._addEventListener with focusout/focusin. This
-                            // uses the browser's blur event directly beacuse _addEventListener doesn't support focusout/focusin
-                            // on window.
-                            _Global[listenerOperation]("blur", globalListeners.windowBlur, false);
-
-                            // Be careful so it behaves in designer as well.
-                            if (_WinRT.Windows.UI.Input.EdgeGesture) {
-                                // Catch edgy events too
-                                var edgy = _WinRT.Windows.UI.Input.EdgeGesture.getForCurrentView();
-                                edgy[listenerOperation]("starting", globalListeners.edgyStarting);
-                                edgy[listenerOperation]("completed", globalListeners.edgyCompleted);
-                            }
-
-                            if (_WinRT.Windows.UI.ViewManagement.InputPane) {
-                                // React to Soft Keyboard events
-                                var inputPane = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView();
-                                inputPane[listenerOperation]("showing", globalListeners.inputPaneShowing, false);
-                                inputPane[listenerOperation]("hiding", globalListeners.inputPaneHiding, false);
-
-                                _Global.document[listenerOperation]("scroll", globalListeners.documentScroll, false);
-                            }
-
-                            // React to Hardware BackButton event
-                            Application[listenerOperation]("backclick", globalListeners.backClicked, false);
-
-                            // Window resize event
-                            _Global.addEventListener("resize", globalListeners.windowResized, false);
-
-                            currentState = newState;
-                        }
-                    }
-
-                    var globalListeners = {
-                        windowBlur: function windowBlur(event) {
-                            // Want to lightdismiss _Overlays on window blur.
-                            // We get blur if we click off the window, including into an iframe within our window.
-                            // Both blurs call this function, but fortunately document.hasFocus is true if either
-                            // the document window or our iframe window has focus.                            
-                            if (!_Global.document.hasFocus()) {
-                                // The document doesn't have focus, so they clicked off the app, so light dismiss.
-                                _Overlay._lightDismissOverlays(false);
-                            } else {
-                                if ((_Overlay._clickEatingFlyoutDiv &&
-                                     _Overlay._clickEatingFlyoutDiv.style.display === "block") ||
-                                    (_Overlay._clickEatingAppBarDiv &&
-                                     _Overlay._clickEatingAppBarDiv.style.display === "block")) {
-                                    // We were trying to unfocus the window, but document still has focus,
-                                    // so make sure the iframe that took the focus will check for blur next time.
-                                    // We don't have to do this if the click eating div is hidden because then
-                                    // there would be no flyout or appbar needing light dismiss.
-                                    var active = _Global.document.activeElement;
-                                    if (active && active.tagName === "IFRAME" && !active.msLightDismissBlur) {
-                                        // - This will go away when the IFRAME goes away, and we only create one.
-                                        // - This only works in IE because other browsers don't fire focus events on iframe elements.
-                                        // - Can't use WinJS.Utilities._addEventListener's focusout because it doesn't fire when an
-                                        //   iframe loses focus due to changing windows.
-                                        active.addEventListener("blur", globalListeners._windowBlur, false);
-                                        active.msLightDismissBlur = true;
-                                    }
-                                }
-                            }
-                        },
-                        inputPaneShowing: function inputePaneShowing(event) {
-                            _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StartTM");
-                            _allOverlaysCallback(event, "_showingKeyboard");
-                            _WriteProfilerMark(globalProfilerString + "_showingKeyboard,StopTM");
-                        },
-                        inputPaneHiding: function inputPaneHiding(event) {
-                            _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StartTM");
-                            _allOverlaysCallback(event, "_hidingKeyboard");
-                            _WriteProfilerMark(globalProfilerString + "_hidingKeyboard,StopTM");
-                        },
-                        documentScroll: function documentScroll(event) {
-                            _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StartTM");
-                            _allOverlaysCallback(event, "_checkScrollPosition");
-                            _WriteProfilerMark(globalProfilerString + "_checkScrollPosition,StopTM");
-                        },
-                        edgyStarting: function edgyStarting(event) {
-                            _Overlay._lightDismissAllFlyouts();
-                        },
-                        edgyCompleted: function edgyCompleted(event) {
-                            // Right mouse clicks in WWA will trigger the edgy "completed" event.
-                            // Flyouts and SettingsFlyouts should not light dismiss if they are the target of that right click.
-                            if (!_Overlay._containsRightMouseClick) {
-                                _Overlay._lightDismissAllFlyouts();
-                            }
-                        },
-                        backClicked: function backClicked(event) {
-                            _WriteProfilerMark(globalProfilerString + "_backClick,StartTM");
-                            var handled = _allOverlaysCallback(event, "_backClick", true);
-                            _WriteProfilerMark(globalProfilerString + "_backClick,StopTM");
-                            return handled;
-                        },
-                        windowResized: function windowResized(event) {
-                            _WriteProfilerMark(globalProfilerString + "_baseResize,StartTM");
-                            _allOverlaysCallback(event, "_baseResize");
-                            _WriteProfilerMark(globalProfilerString + "_baseResize,StopTM");
-                        },
-                    };
-
-                    return returnObject;
-                }()),
+                //// Static controller for _Overlay global events registering/unregistering.
+                //// The API is:
+                ////   _globalEventListeners.initialize()
+                ////   _globalEventListeners.reset()
+                _globalEventListeners: new _GlobalListener(),
 
                 // Hide all light dismiss AppBars if what has focus is not part of a AppBar or flyout.
                 _hideIfAllAppBarsLostFocus: function _Overlay_hideIfAllAppBarsLostFocus() {
