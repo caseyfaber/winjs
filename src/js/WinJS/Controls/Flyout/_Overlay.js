@@ -116,6 +116,8 @@ define([
                             },
                             backClicked: function backClicked(event) {
                                 _WriteProfilerMark(_GlobalListener.profilerString + "_backClick,StartTM");
+                                // Pass true as the 3rd parameter to _allOverlaysCallback to ensure that we stop processing once an _Overlay has handled the event. 
+                                // A failure to do so can lead to a chain reaction of light dismiss in scenarios where a SettingsFlyout or AppBar had invoked a Flyout or Menu.
                                 var handled = _allOverlaysCallback(event, "_backClick", true);
                                 _WriteProfilerMark(_GlobalListener.profilerString + "_backClick,StopTM");
                                 return handled;
