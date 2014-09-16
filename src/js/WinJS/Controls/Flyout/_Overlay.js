@@ -1476,10 +1476,7 @@ define([
                     return null;
                 },
 
-                //// Static controller for _Overlay global events registering/unregistering.
-                //// The API is:
-                ////   _globalEventListeners.initialize()
-                ////   _globalEventListeners.reset()
+                // Static controller for _Overlay global events registering/unregistering.
                 _globalEventListeners: new _GlobalListener(),
 
                 // Hide all light dismiss AppBars if what has focus is not part of a AppBar or flyout.
