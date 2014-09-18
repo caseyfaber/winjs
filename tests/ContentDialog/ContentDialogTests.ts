@@ -152,6 +152,7 @@ module WinJSTests {
         }
         
         tearDown() {
+            WinJS.Utilities.disposeSubTree(testRoot);
             var parent = testRoot.parentNode;
             parent && parent.removeChild(testRoot);
         }

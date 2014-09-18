@@ -11,8 +11,9 @@ define([
     './Navigation',
     './Promise',
     './_Signal',
-    './Scheduler'
-    ], function applicationInit(exports, _Global, _WinRT, _Base, _Events, _Log, _WriteProfilerMark, _State, Navigation, Promise, _Signal, Scheduler) {
+    './Scheduler',
+    './Utilities/_ElementUtilities'
+    ], function applicationInit(exports, _Global, _WinRT, _Base, _Events, _Log, _WriteProfilerMark, _State, Navigation, Promise, _Signal, Scheduler, _ElementUtilities) {
     "use strict";
 
     _Global.Debug && (_Global.Debug.setNonUserCodeExceptions = true);
@@ -616,6 +617,11 @@ define([
                 terminateAppHandler = value;
             }
         },
+        
+        _applicationListener: _Base.Namespace._lazy(function () {
+            // Use _lazy because publicNS can't be referenced in its own definition
+            return new _ElementUtilities._GenericListener("Application", publicNS);
+        }),
 
         /// <field type="Function" locid="WinJS.Application.oncheckpoint" helpKeyword="WinJS.Application.oncheckpoint">
         /// Occurs when receiving Process Lifetime Management (PLM) notification or when the checkpoint function is called.

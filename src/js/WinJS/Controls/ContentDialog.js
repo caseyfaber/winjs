@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 define([
+    '../Application',
     '../Utilities/_Dispose',
     '../Promise',
     '../_Signal',
@@ -16,7 +17,7 @@ define([
     '../Animations',
     'require-style!less/desktop/controls',
     'require-style!less/phone/controls'
-    ], function contentDialogInit(_Dispose, Promise, _Signal, _BaseUtils, _Global, _WinRT, _Base, _Events, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Hoverable, _Animations) {
+    ], function contentDialogInit(Application, _Dispose, Promise, _Signal, _BaseUtils, _Global, _WinRT, _Base, _Events, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Hoverable, _Animations) {
     "use strict";
 
     _Base.Namespace.define("WinJS.UI", {
@@ -59,6 +60,8 @@ define([
                 title: "win-contentdialog-title",
                 primaryCommand: "win-contentdialog-primarycommand",
                 secondaryCommand: "win-contentdialog-secondarycommand",
+                // TODO: tertiary?
+                // TODO: commands?
                 
                 _verticalAlignment: "win-contentdialog-verticalalignment",
                 _scroller: "win-contentdialog-scroller",
@@ -76,11 +79,67 @@ define([
             };
             var minContentHeightWithInputPane = 120;
             
-            function aDialogIsShowing() {
-                var visibleDialogs = Array.prototype.slice.call(_Global.document.body.querySelectorAll("." + ClassNames.contentDialog + "." + ClassNames._visible), 0);
+            var ContentDialogManager = new (_Base.Class.define(function () {
+                this._dialogs = [];
+                this._prevFocus = null;
+            }, {
+                willShow: function (dialog) {
+                    var startLength = this._dialogs.length; 
+                    this._pruneDialogsMissingFromDom();
+                    
+                    if (this._dialogs.indexOf(dialog) === -1) {
+                        this._dialogs.push(dialog);
+                    }
+                    
+                    if (startLength === 0 && this._dialogs.length === 1) {
+                        this._firstDialogWillShow();
+                    }
+                },
+                
+                didHide: function (dialog) {
+                    var startLength = this._dialogs.length; 
+                    this._pruneDialogsMissingFromDom();
+                    
+                    var index = this._dialogs.indexOf(dialog);
+                    if (index !== -1) {
+                        this._dialogs.splice(index, 1);
+                    }
+                    
+                    if (startLength > 0 && this._dialogs.length === 0) {
+                        this._lastDialogDidHide();
+                    }
+                },
+                
+                aDialogIsActive: function () {
+                    return this._dialogs.some(function (dialog) {
+                        return dialog._active;
+                    });
+                },
+                
+                // Filter out any ContentDialogs that may have been ripped
+                // out of the DOM without getting hidden or disposed.
+                _pruneDialogsMissingFromDom: function () {
+                    this._dialogs = this._dialogs.filter(function (dialog) {
+                        return !_Global.document.body.contains(dialog.element);
+                    });
+                },
+                
+                _firstDialogWillShow: function () {
+                    this._prevFocus = _Global.document.activeElement;
+                },
+                
+                _lastDialogDidHide: function () {
+                    var prevFocus = this._prevFocus;
+                    this._prevFocus = null; 
+                    prevFocus && prevFocus.focus();
+                }
+            }))();
+            
+            function aDialogIsActive() {
+                var visibleDialogs = Array.prototype.slice.call(_Global.document.body.querySelectorAll("." + ClassNames.contentDialog), 0);
                 return visibleDialogs.some(function (dialogEl) {
                     var dialog = dialogEl.winControl;
-                    return dialog && !dialog._disposed && !dialog.hidden;
+                    return dialog && dialog._active;
                 });
             }
             
@@ -169,6 +228,7 @@ define([
             //     // State lifecycle
             //     enter(arg0);
             //     exit();
+            //     active: boolean;
             //     // ContentDialog's public API surface
             //     hidden: boolean;
             //     show();
@@ -191,6 +251,7 @@ define([
                         this.dialog._setState(States.Hidden, false);
                     },
                     exit: _,
+                    active: false,
                     show: function ContentDialog_InitState_show() {
                         throw "It's illegal to call show on the Init state";
                     },
@@ -209,8 +270,9 @@ define([
                         }
                     },
                     exit: _,
+                    active: false,
                     show: function ContentDialog_HiddenState_show() {
-                        if (aDialogIsShowing()) {
+                        if (ContentDialogManager.aDialogIsActive()) {
                             return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ContentDialogAlreadyShowing", Strings.contentDialogAlreadyShowing));
                         } else {
                             var dismissedPromise = this.dialog._dismissedSignal.promise;
@@ -237,6 +299,7 @@ define([
                         });
                     },
                     exit: cancelInterruptibles,
+                    active: true,
                     show: function ContentDialog_BeforeShowState_show() {
                         return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ContentDialogAlreadyShowing", Strings.contentDialogAlreadyShowing));
                     },
@@ -258,6 +321,8 @@ define([
                             return ready.then(function () {
                                 that._pendingHide = null;
                                 _ElementUtilities.addClass(that.dialog._dom.root, ClassNames._visible);
+                                ContentDialogManager.willShow(that.dialog);
+                                Application._applicationListener.addEventListener(that.dialog._dom.root, "backclick", that.dialog._onBackClickBound);
                                 that.dialog._addInputPaneListeners();
                                 if (_WinRT.Windows.UI.ViewManagement.InputPane) {
                                     var inputPaneHeight = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView().occludedRect.height;
@@ -275,6 +340,7 @@ define([
                         });
                     },
                     exit: cancelInterruptibles,
+                    active: true,
                     show: function ContentDialog_ShowingState_show() {
                         if (this._pendingHide) {
                             var reason = this._pendingHide.reason;
@@ -301,6 +367,7 @@ define([
                          }
                     },
                     exit: _,
+                    active: true,
                     show: function ContentDialog_ShownState_show() {
                         return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ContentDialogAlreadyShowing", Strings.contentDialogAlreadyShowing));
                     },
@@ -331,6 +398,7 @@ define([
                         });
                     },
                     exit: cancelInterruptibles,
+                    active: true,
                     show: function ContentDialog_BeforeHideState_show() {
                         return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ContentDialogAlreadyShowing", Strings.contentDialogAlreadyShowing));
                     },
@@ -351,11 +419,13 @@ define([
                         interruptible(this, function (that, ready) {
                             return ready.then(function () {
                                 that._showIsPending = false;
-                                that.dialog._removeInputPaneListeners();
                                 that.dialog._resetDismissalPromise(reason); // Give opportunity for chain to be canceled when calling into app code
                             }).then(function () {
                                 return that.dialog._playExitAnimation();
                             }).then(function () {
+                                ContentDialogManager.didHide(that.dialog);
+                                Application._applicationListener.removeEventListener(that.dialog._dom.root, "backclick", that.dialog._onBackClickBound);
+                                that.dialog._removeInputPaneListeners();
                                 _ElementUtilities.removeClass(that.dialog._dom.root, ClassNames._visible);
                                 that.dialog._clearInputPaneRendering();
                                 that.dialog._fireAfterHide(reason); // Give opportunity for chain to be canceled when calling into app code
@@ -365,6 +435,7 @@ define([
                         });
                     },
                     exit: cancelInterruptibles,
+                    active: false,
                     show: function ContentDialog_HidingState_show() {
                         if (this._showIsPending) {
                             return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ContentDialogAlreadyShowing", Strings.contentDialogAlreadyShowing));
@@ -387,10 +458,13 @@ define([
                     name: "Disposed",
                     hidden: true,
                     enter: function ContentDialog_DisposedState_enter() {
+                        ContentDialogManager.didHide(this.dialog);
+                        Application._applicationListener.removeEventListener(this.dialog._dom.root, "backclick", this.dialog._onBackClickBound);
                         this.dialog._removeInputPaneListeners();
                         this.dialog._dismissedSignal.error(new _ErrorFromName("WinJS.UI.ContentDialog.ControlDisposed", Strings.controlDisposed));
                     },
                     exit: _,
+                    active: false,
                     show: function ContentDialog_DisposedState_show() {
                         return Promise.wrapError(new _ErrorFromName("WinJS.UI.ContentDialog.ControlDisposed", Strings.controlDisposed));
                     },
@@ -426,6 +500,7 @@ define([
                 }
                 options = options || {};
                 
+                this._onBackClickBound = this._onBackClick.bind(this);
                 this._onInputPaneShownBound = this._onInputPaneShown.bind(this);
                 this._onInputPaneHiddenBound = this._onInputPaneHidden.bind(this);
                 
@@ -632,6 +707,9 @@ define([
                     dom.body.setAttribute("aria-labelledby", dom.title.id);
                     this._updateTabIndices();
                     
+                    _ElementUtilities._addEventListener(dom.root, "pointerdown", this._onPointerDown.bind(this));
+                    _ElementUtilities._addEventListener(dom.root, "pointerup", this._onPointerUp.bind(this));
+                    dom.root.addEventListener("click", this._onClick.bind(this));
                     dom.root.addEventListener("keydown", this._onKeyDown.bind(this));
                     _ElementUtilities._addEventListener(dom.startBodyTab, "focusin", this._onStartBodyTabFocusIn.bind(this));
                     _ElementUtilities._addEventListener(dom.endBodyTab, "focusin", this._onEndBodyTabFocusIn.bind(this));
@@ -646,14 +724,54 @@ define([
                     this._dom.commands[1].tabIndex = tabIndex.highest;
                     this._dom.endBodyTab.tabIndex = tabIndex.highest;
                 }),
+
+                // Only one dialog may be shown at a time. When show() is called, this property
+                // must be false for all other dialogs in order for show() to succeed.
+                _active: {
+                    get: function ContentDialog_active_get() {
+                        return this._state.active;
+                    }
+                },
+                
+                _hasFocus: {
+                    get: function ContentDialog_hasFocus_get() {
+                        return this._dom.root.contains(_Global.document.activeElement);
+                    }
+                },
                 
                 _onCommandClicked: function ContentDialog_onCommandClicked(reason) {
                     this._state.onCommandClicked(reason);
+                },
+
+                _onPointerDown: function ContentDialog_onPointerDown(eventObject) {
+                    eventObject.stopPropagation();
+                    eventObject.preventDefault();
+                },
+
+                _onPointerUp: function ContentDialog_onPointerUp(eventObject) {
+                    eventObject.stopPropagation();
+                    eventObject.preventDefault();
+                },
+
+                _onClick: function ContentDialog_onClick(eventObject) {
+                    eventObject.stopPropagation();
+                    eventObject.preventDefault();
                 },
                 
                 _onKeyDown: function ContentDialog_onKeyDown(eventObject) {
                     if (eventObject.keyCode === _ElementUtilities.Key.tab) {
                         this._updateTabIndices();
+                    } else if (eventObject.keyCode === _ElementUtilities.Key.escape) {
+                        this.hide(DismissalReasons.none);
+                        eventObject.preventDefault();
+                        eventObject.stopPropagation();
+                    }
+                },
+                
+                _onBackClick: function ContentDialog_onBackClick(eventObject) {
+                    if (this._hasFocus) {
+                        this.hide(DismissalReasons.none);
+                        eventObject.preventDefault();
                     }
                 },
 
@@ -666,7 +784,7 @@ define([
                 },
 
                 _onInputPaneShown: function ContentDialog_onInputPaneShown(eventObject) {
-                    this._state.onInputPaneShown(eventObject);
+                    this._state.onInputPaneShown(eventObject.detail.originalEvent);
                 },
                 
                 _onInputPaneHidden: function ContentDialog_onInputPaneHidden() {
@@ -729,19 +847,13 @@ define([
                 },
 
                 _addInputPaneListeners: function ContentDialog_addInputPaneListeners() {
-                    if (_WinRT.Windows.UI.ViewManagement.InputPane) {
-                        var inputPane = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView();
-                        inputPane.addEventListener("showing", this._onInputPaneShownBound);
-                        inputPane.addEventListener("hiding", this._onInputPaneHiddenBound);
-                    }
+                    _ElementUtilities._inputPaneListener.addEventListener(this._dom.root, "showing", this._onInputPaneShownBound);
+                    _ElementUtilities._inputPaneListener.addEventListener(this._dom.root, "hiding", this._onInputPaneShownBound);
                 },
 
                 _removeInputPaneListeners: function ContentDialog_removeInputPaneListeners() {
-                    if (_WinRT.Windows.UI.ViewManagement.InputPane) {
-                        var inputPane = _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView();
-                        inputPane.removeEventListener("showing", this._onInputPaneShownBound);
-                        inputPane.removeEventListener("hiding", this._onInputPaneHiddenBound);
-                    }
+                    _ElementUtilities._inputPaneListener.removeEventListener(this._dom.root, "showing", this._onInputPaneShownBound);
+                    _ElementUtilities._inputPaneListener.removeEventListener(this._dom.root, "hiding", this._onInputPaneShownBound);
                 },
 
                 _renderForInputPane: function ContentDialog_renderForInputPane(inputPaneHeight) {
