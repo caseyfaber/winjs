@@ -349,7 +349,7 @@ define([
                                     }
                                 }
                                 ContentDialogManager.willShow(that.dialog);
-                                _ElementUtilities._focusFirstFocusableElement(that.dialog._dom.content) || that.dialog._dom.body.focus();
+                                that.dialog._focusInitialElement();
                                 return that.dialog._playEntranceAnimation();
                             }).then(function () {
                                 that.dialog._fireEvent(EventNames.afterShow); // Give opportunity for chain to be canceled when calling into app code
@@ -524,6 +524,7 @@ define([
                 
                 this._disposed = false;
                 this._resizedForInputPane = false;
+                this._currentFocus = null;
                 
                 this._initializeDom(element || _Global.document.createElement("div"));
                 this._setState(States.Init);
@@ -728,6 +729,8 @@ define([
                     _ElementUtilities._addEventListener(dom.root, "pointerdown", this._onPointerDown.bind(this));
                     _ElementUtilities._addEventListener(dom.root, "pointerup", this._onPointerUp.bind(this));
                     dom.root.addEventListener("click", this._onClick.bind(this));
+                    _ElementUtilities._addEventListener(dom.body, "focusin", this._onFocusIn.bind(this));
+                    _ElementUtilities._addEventListener(dom.body, "focusout", this._onFocusOut.bind(this));
                     dom.root.addEventListener("keydown", this._onKeyDown.bind(this));
                     _ElementUtilities._addEventListener(dom.startBodyTab, "focusin", this._onStartBodyTabFocusIn.bind(this));
                     _ElementUtilities._addEventListener(dom.endBodyTab, "focusin", this._onEndBodyTabFocusIn.bind(this));
@@ -779,6 +782,18 @@ define([
                     eventObject.stopPropagation();
                     if (!this._dom.body.contains(eventObject.target)) {
                         eventObject.preventDefault();
+                    }
+                },
+                
+                _onFocusIn: function ContentDialog_onFocusIn(eventObject) {
+                    this._currentFocus = eventObject.target;
+                },
+                
+                _onFocusOut: function ContentDialog_onFocusOut(eventObject) {
+                    if (_Global.document.hasFocus() && !this._dom.body.contains(eventObject.relatedTarget)) {
+                        if (!(this._currentFocus && this._dom.body.contains(this._currentFocus) && _ElementUtilities._tryFocus(this._currentFocus))) {
+                            this._focusInitialElement();
+                        }
                     }
                 },
                 
@@ -928,6 +943,10 @@ define([
                         style.minHeight = "";
                         this._resizedForInputPane = false;
                     }
+                },
+                
+                _focusInitialElement: function ContentDialog_focusInitialElement() {
+                    _ElementUtilities._focusFirstFocusableElement(this._dom.content) || this._dom.body.focus();
                 }
             }, {
                 _ClassNames: ClassNames
