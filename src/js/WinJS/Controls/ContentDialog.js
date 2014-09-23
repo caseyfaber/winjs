@@ -267,6 +267,8 @@ define([
                     enter: function ContentDialog_HiddenState_enter(showIsPending) {
                         if (showIsPending) {
                             this.show();
+                        } else {
+                            ContentDialogManager.didHide(this.dialog);
                         }
                     },
                     exit: _,
@@ -321,7 +323,6 @@ define([
                             return ready.then(function () {
                                 that._pendingHide = null;
                                 _ElementUtilities.addClass(that.dialog._dom.root, ClassNames._visible);
-                                ContentDialogManager.willShow(that.dialog);
                                 Application._applicationListener.addEventListener(that.dialog._dom.root, "backclick", that.dialog._onBackClickBound);
                                 that.dialog._addInputPaneListeners();
                                 if (_WinRT.Windows.UI.ViewManagement.InputPane) {
@@ -330,6 +331,7 @@ define([
                                         that.dialog._renderForInputPane(inputPaneHeight);
                                     }
                                 }
+                                ContentDialogManager.willShow(that.dialog);
                                 _ElementUtilities._focusFirstFocusableElement(that.dialog._dom.content) || that.dialog._dom.body.focus();
                                 return that.dialog._playEntranceAnimation();
                             }).then(function () {
@@ -423,7 +425,6 @@ define([
                             }).then(function () {
                                 return that.dialog._playExitAnimation();
                             }).then(function () {
-                                ContentDialogManager.didHide(that.dialog);
                                 Application._applicationListener.removeEventListener(that.dialog._dom.root, "backclick", that.dialog._onBackClickBound);
                                 that.dialog._removeInputPaneListeners();
                                 _ElementUtilities.removeClass(that.dialog._dom.root, ClassNames._visible);
