@@ -152,12 +152,14 @@ define([
                 }
             }))();
             
-            function aDialogIsActive() {
-                var visibleDialogs = Array.prototype.slice.call(_Global.document.body.querySelectorAll("." + ClassNames.contentDialog), 0);
-                return visibleDialogs.some(function (dialogEl) {
-                    var dialog = dialogEl.winControl;
-                    return dialog && dialog._active;
-                });
+            function inFlyout(element) {
+                while (element) {
+                    if (_ElementUtilities.hasClass(element, "win-flyout")) {
+                        return true;
+                    }
+                    element = element.parentNode;
+                }
+                return false;
             }
             
             // WinJS animation promises always complete successfully. This
@@ -790,7 +792,7 @@ define([
                 },
                 
                 _onFocusOut: function ContentDialog_onFocusOut(eventObject) {
-                    if (_Global.document.hasFocus() && !this._dom.body.contains(eventObject.relatedTarget)) {
+                    if (_Global.document.hasFocus() && !this._dom.body.contains(eventObject.relatedTarget) && !inFlyout(eventObject.relatedTarget)) {
                         if (!(this._currentFocus && this._dom.body.contains(this._currentFocus) && _ElementUtilities._tryFocus(this._currentFocus))) {
                             this._focusInitialElement();
                         }
