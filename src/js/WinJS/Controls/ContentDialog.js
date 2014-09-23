@@ -763,17 +763,23 @@ define([
 
                 _onPointerDown: function ContentDialog_onPointerDown(eventObject) {
                     eventObject.stopPropagation();
-                    eventObject.preventDefault();
+                    if (!this._dom.body.contains(eventObject.target)) {
+                        eventObject.preventDefault();
+                    }
                 },
 
                 _onPointerUp: function ContentDialog_onPointerUp(eventObject) {
                     eventObject.stopPropagation();
-                    eventObject.preventDefault();
+                    if (!this._dom.body.contains(eventObject.target)) {
+                        eventObject.preventDefault();
+                    }
                 },
 
                 _onClick: function ContentDialog_onClick(eventObject) {
                     eventObject.stopPropagation();
-                    eventObject.preventDefault();
+                    if (!this._dom.body.contains(eventObject.target)) {
+                        eventObject.preventDefault();
+                    }
                 },
                 
                 _onKeyDown: function ContentDialog_onKeyDown(eventObject) {
