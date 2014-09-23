@@ -60,7 +60,6 @@ define([
                 title: "win-contentdialog-title",
                 primaryCommand: "win-contentdialog-primarycommand",
                 secondaryCommand: "win-contentdialog-secondarycommand",
-                // TODO: tertiary?
                 // TODO: commands?
                 
                 _verticalAlignment: "win-contentdialog-verticalalignment",
@@ -82,6 +81,7 @@ define([
             var ContentDialogManager = new (_Base.Class.define(function () {
                 this._dialogs = [];
                 this._prevFocus = null;
+                this._ariaHidden = [];
             }, {
                 willShow: function (dialog) {
                     var startLength = this._dialogs.length; 
@@ -92,7 +92,7 @@ define([
                     }
                     
                     if (startLength === 0 && this._dialogs.length === 1) {
-                        this._firstDialogWillShow();
+                        this._firstDialogWillShow(dialog);
                     }
                 },
                 
@@ -124,13 +124,30 @@ define([
                     });
                 },
                 
-                _firstDialogWillShow: function () {
+                _firstDialogWillShow: function (dialog) {
                     this._prevFocus = _Global.document.activeElement;
+                    // TODO: What if the dialog isn't a child of the body?
+                    for (var node = _Global.document.body.firstElementChild; node; node = node.nextElementSibling) {
+                        var ariaHidden = node.getAttribute("aria-hidden") === "true";
+                        if (node !== dialog.element && !ariaHidden && getComputedStyle(node).display !== "none") {
+                            this._ariaHidden.push(node);
+                        }
+                    }
+                    
+                    this._ariaHidden.forEach(function (node) {
+                        node.setAttribute("aria-hidden", true);
+                    });
                 },
                 
                 _lastDialogDidHide: function () {
                     var prevFocus = this._prevFocus;
-                    this._prevFocus = null; 
+                    this._prevFocus = null;
+                    var ariaHidden = this._ariaHidden;
+                    this._ariaHidden = [];
+                    
+                    ariaHidden.forEach(function (node) {
+                        node.setAttribute("aria-hidden", false);
+                    });
                     prevFocus && prevFocus.focus();
                 }
             }))();
