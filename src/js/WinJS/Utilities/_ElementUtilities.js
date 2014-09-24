@@ -1282,6 +1282,7 @@ define([
         
         _GenericListener: GenericListener,
         _globalListener: new GenericListener("Global", _Global, { registerThruWinJSCustomEvents: true }),
+        _documentElementListener: new GenericListener("DocumentElement", _Global.document.documentElement, { registerThruWinJSCustomEvents: true }),
         _inputPaneListener: _WinRT.Windows.UI.ViewManagement.InputPane ?
             new GenericListener("InputPane", _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView()) :
             { addEventListener: function () { }, removeEventListener: function () { } },
